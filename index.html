@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -59,7 +58,7 @@
   <script>
     const LIFF_ID = "2007819135-rOPyVmM6";
     const REPORT_API = "https://script.google.com/macros/s/AKfycbyNzsBaQnylzElyLpI4pEZFsudjc0JRYTjFh5ke49FZYR0xWijWumxBHYn5rV7HbmipcA/exec";
-    const VERIFY_API = "https://script.google.com/macros/s/AKfycbyNzsBaQnylzElyLpI4pEZFsudjc0JRYTjFh5ke49FZYR0xWijWumxBHYn5rV7HbmipcA/exec";
+    const VERIFY_API = REPORT_API;
 
     let userId = "", displayName = "";
 
@@ -78,11 +77,11 @@
       document.getElementById("reportBtn").style.display = "inline-block";
 
       document.getElementById("reportBtn").onclick = () => {
-        fetch(REPORT_API + "?uid=" + encodeURIComponent(userId) + "&name=" + encodeURIComponent(displayName))
+        fetch(REPORT_API + "?action=register&uid=" + encodeURIComponent(userId) + "&name=" + encodeURIComponent(displayName))
           .then(res => res.json())
           .then(data => {
             if (data.status === "success") {
-              document.getElementById("scoreSheet").href = data.sheetUrl;
+              document.getElementById("scoreSheet").href = data.sheetUrl || "#";
               document.getElementById("scoreCard").style.display = "block";
               alert("✅ 報到成功！");
             } else {
@@ -101,7 +100,7 @@
     }
 
     function verifyToken(gateId, token) {
-      fetch(VERIFY_API + "?gate=" + gateId + "&token=" + token + "&uid=" + userId)
+      fetch(VERIFY_API + "?action=pass_token&gateId=" + gateId + "&token=" + token + "&uid=" + userId)
         .then(res => res.json())
         .then(data => {
           if (data.status === "success") {
