@@ -44,9 +44,6 @@
     <p>🔐 請先使用 LINE 登入驗證</p>
     <p id="welcome"></p>
     <button class="btn" id="reportBtn" style="display:none;">📌 完成報到</button>
-    <div class="card" id="scoreCard" style="display:none;">
-      <p><strong>📊 個人計分表：</strong><a id="scoreSheet" href="#" target="_blank">點此查看</a></p>
-    </div>
   </div>
 
   <div class="info" id="passArea" style="display:none;">
@@ -59,7 +56,7 @@
     const LIFF_ID = "2007819135-rOPyVmM6";
     const API_BASE = "https://script.google.com/macros/s/AKfycbwwE-ymGRVtjcif7Nda_fk319wUsCquIk5uN7oXo5KVF3BRkdmiyMIfNSQLwZyahnv0vg/exec";
     const REPORT_API = API_BASE + "?action=register";
-    const VERIFY_API = API_BASE + "?action=pass_token";
+    const PASS_API = API_BASE + "?action=pass_token";
 
     let userId = "", displayName = "";
 
@@ -69,11 +66,9 @@
         liff.login();
         return;
       }
-
       const profile = await liff.getProfile();
       userId = profile.userId;
       displayName = profile.displayName;
-
       document.getElementById("welcome").innerHTML = `👤 歡迎，${displayName}`;
       document.getElementById("reportBtn").style.display = "inline-block";
 
@@ -94,13 +89,16 @@
     function parseUUID(uuid) {
       if (!uuid || uuid.length < 32) return null;
       const gateId = uuid.slice(0, 14);
-      const tp = uuid.slice(14, 16); // 若未使用可忽略
-      const token = uuid.slice(16);
-      return { gateId, token };
+      const tp = uuid.slice(14, 16); // TP 類型
+      const token = uuid.slice(16);  // 16碼
+      return { gateId, tp, token };
     }
 
-    function verifyToken(gateId, token) {
-      fetch(`${VERIFY_API}&gateId=${gateId}&token=${token}&uid=${userId}`)
+    function verifyToken({ gateId, tp, token }) {
+      document.getElementById("passArea").style.display = "block";
+      document.getElementById("gateId").textContent = gateId;
+
+      fetch(`${PASS_API}&gateId=${gateId}&token=${token}&uid=${userId}`)
         .then(res => res.json())
         .then(data => {
           if (data.status === "success") {
@@ -122,9 +120,7 @@
       if (uuid) {
         const parsed = parseUUID(uuid);
         if (parsed) {
-          document.getElementById("passArea").style.display = "block";
-          document.getElementById("gateId").textContent = parsed.gateId;
-          verifyToken(parsed.gateId, parsed.token);
+          verifyToken(parsed);
         }
       }
     })();
