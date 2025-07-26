@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>NFC瘋打卡 - 報到</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: "Noto Sans TC", sans-serif;
+      padding: 2em;
+      background-color: #fefae0;
+      color: #333;
+    }
+    h1 {
+      color: #d9480f;
+    }
+    .btn {
+      background: #d9480f;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    input {
+      padding: 8px;
+      font-size: 16px;
+      width: 100%;
+      margin-bottom: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>📍 NFC瘋打卡｜報到頁</h1>
+  <p>請確認以下資訊正確，完成報到後即可開始闖關！</p>
+
+  <form id="registerForm">
+    <label>姓名：</label>
+    <input type="text" id="name" required />
+
+    <input type="hidden" id="uid" />
+
+    <button type="submit" class="btn">✅ 確認報到</button>
+  </form>
+
+  <p id="result"></p>
+
+  <script>
+    async function main() {
+      await liff.init({ liffId: "2007819135-rOPyVmM6" });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+      } else {
+        const profile = await liff.getProfile();
+        document.getElementById("uid").value = profile.userId;
+      }
+    }
+
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const uid = document.getElementById("uid").value;
+
+      const url = "https://script.google.com/macros/s/AKfycbytiYXFh90M1jg393JgplvWUStVBlF9-xQkIhojSKbqzplyrG70knyQHL3F8pmv2Y2PvQ/exec";
+      const res = await fetch(`${url}?action=register&uid=${uid}&name=${encodeURIComponent(name)}`);
+      const data = await res.json();
+
+      document.getElementById("result").textContent = data.message;
+    });
+
+    main();
+  </script>
+</body>
+</html>

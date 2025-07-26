@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>NFC瘋打卡｜驗證打卡</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: "Noto Sans TC", sans-serif;
+      padding: 2em;
+      background-color: #fffef9;
+      color: #333;
+      text-align: center;
+    }
+    h1 {
+      color: #1f6f8b;
+    }
+    .msg {
+      margin-top: 2em;
+      font-size: 18px;
+    }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <h1>🔐 NFC瘋打卡</h1>
+  <div class="msg" id="result">請稍候，正在驗證您的打卡...</div>
+
+  <script>
+    async function main() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const uuid = urlParams.get("uuid");
+      if (!uuid || uuid.length < 20) {
+        document.getElementById("result").innerHTML = "<span class='error'>❌ 格式錯誤：缺少或錯誤的 UUID</span>";
+        return;
+      }
+
+      const gateId = uuid.slice(0, 14);
+      const token = uuid.slice(14);
+
+      await liff.init({ liffId: "2007819135-rOPyVmM6" });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      const uid = profile.userId;
+
+      const apiUrl = "https://script.google.com/macros/s/AKfycbytiYXFh90M1jg393JgplvWUStVBlF9-xQkIhojSKbqzplyrG70knyQHL3F8pmv2Y2PvQ/exec";
+      const fullUrl = `${apiUrl}?action=pass_token&uid=${uid}&gateId=${gateId}&token=${token}`;
+
+      try {
+        const res = await fetch(fullUrl);
+        const data = await res.json();
+        if (data.status === "success") {
+          document.getElementById("result").innerHTML = `<span class='success'>✅ ${data.message}</span>`;
+        } else {
+          document.getElementById("result").innerHTML = `<span class='error'>❌ ${data.message}</span>`;
+        }
+      } catch (err) {
+        document.getElementById("result").innerHTML = "<span class='error'>❌ 連線錯誤，請稍後再試</span>";
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
