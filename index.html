@@ -36,18 +36,18 @@
 <body>
   <h2>🎮 NFC瘋打卡徽章牆</h2>
   <div class="badge-grid" id="badgeGrid">
-    <img id="badge1" src="Badge-1.png" />
-    <img id="badge2" src="Badge-2.png" />
-    <img id="badge3" src="Badge-3.png" />
-    <img id="badge4" src="Badge-4.png" />
-    <img id="badge5" src="Badge-5.png" />
+    <img id="badge1" src="/images/Badge-1.png" />
+    <img id="badge2" src="/images/Badge-2.png" />
+    <img id="badge3" src="/images/Badge-3.png" />
+    <img id="badge4" src="/images/Badge-4.png" />
+    <img id="badge5" src="/images/Badge-5.png" />
   </div>
   <div id="successBadge">
     <h3>🎉 恭喜完成所有關卡！</h3>
   </div>
   <script>
     const LIFF_ID = "2007819135-rOPyVmM6";
-    const API_BASE = "https://script.google.com/macros/s/AKfycbyRjpkGmWhK8cmSd1_q7HFZn6T4g1WnS3R8v8dwXOKt9EK44yt8_utTqQGF9L8IxUcPUQ/exec";
+    const API_BASE = "https://script.google.com/macros/s/AKfycbzcAOTvreqNPrsR5cjAKsOTKuFySTh3TquQijzKZfV8y9aYaipK0855PctwOcBmyOuwpw/exec";
 
     async function initLIFF() {
       await liff.init({ liffId: LIFF_ID });
