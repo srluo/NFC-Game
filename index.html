@@ -1,76 +1,134 @@
+
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>NFC瘋打卡 - 報到</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NFC瘋打卡｜入口頁</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
-      font-family: "Noto Sans TC", sans-serif;
-      padding: 2em;
-      background-color: #fefae0;
+      font-family: "Microsoft JhengHei", sans-serif;
+      background-color: #fefefe;
+      padding: 2rem;
+      text-align: center;
       color: #333;
     }
-    h1 {
-      color: #d9480f;
+    header {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #ff4d4d;
+    }
+    .info, .card {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border: 1px dashed #aaa;
+      border-radius: 10px;
+      background: #fff9f5;
     }
     .btn {
-      background: #d9480f;
+      background-color: #ff4d4d;
       color: white;
-      padding: 10px 20px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
       border: none;
-      font-size: 16px;
       border-radius: 8px;
       cursor: pointer;
-    }
-    input {
-      padding: 8px;
-      font-size: 16px;
-      width: 100%;
-      margin-bottom: 1em;
+      margin-top: 1.2rem;
     }
   </style>
 </head>
 <body>
-  <h1>📍 NFC瘋打卡｜報到頁</h1>
-  <p>請確認以下資訊正確，完成報到後即可開始闖關！</p>
+  <header>NFC瘋打卡｜報到與關卡驗證</header>
 
-  <form id="registerForm">
-    <label>姓名：</label>
-    <input type="text" id="name" required />
+  <div class="info" id="loginArea">
+    <p>🔐 請先使用 LINE 登入驗證</p>
+    <p id="welcome"></p>
+    <button class="btn" id="reportBtn" style="display:none;">📌 完成報到</button>
+    <div class="card" id="scoreCard" style="display:none;">
+      <p><strong>📊 個人計分表：</strong><a id="scoreSheet" href="#" target="_blank">點此查看</a></p>
+    </div>
+  </div>
 
-    <input type="hidden" id="uid" />
-
-    <button type="submit" class="btn">✅ 確認報到</button>
-  </form>
-
-  <p id="result"></p>
+  <div class="info" id="passArea" style="display:none;">
+    <p>📍 感應關卡成功！</p>
+    <p><strong>關卡 ID：</strong><span id="gateId"></span></p>
+    <p><strong>驗證結果：</strong><span id="verifyStatus">驗證中...</span></p>
+  </div>
 
   <script>
-    async function main() {
-      await liff.init({ liffId: "2007819135-rOPyVmM6" });
+    const LIFF_ID = "2007819135-rOPyVmM6";
+    const REPORT_API = "https://script.google.com/macros/s/AKfycbyc62c76q_tMwb8adNV9hfyjVZH821hECu7ESSS7O05aWwggDwZnzvQ1FW3a8ZqwysV/exec";
+    const VERIFY_API = "https://script.google.com/macros/s/AKfycbyc62c76q_tMwb8adNV9hfyjVZH821hECu7ESSS7O05aWwggDwZnzvQ1FW3a8ZqwysV/exec";
+
+    let userId = "", displayName = "";
+
+    async function initLIFF() {
+      await liff.init({ liffId: LIFF_ID });
       if (!liff.isLoggedIn()) {
         liff.login();
-      } else {
-        const profile = await liff.getProfile();
-        document.getElementById("uid").value = profile.userId;
+        return;
       }
+
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+      displayName = profile.displayName;
+
+      document.getElementById("welcome").innerHTML = `👤 歡迎，${displayName}`;
+      document.getElementById("reportBtn").style.display = "inline-block";
+
+      document.getElementById("reportBtn").onclick = () => {
+        fetch(REPORT_API + "?uid=" + encodeURIComponent(userId) + "&name=" + encodeURIComponent(displayName))
+          .then(res => res.json())
+          .then(data => {
+            if (data.status === "success") {
+              document.getElementById("scoreSheet").href = data.sheetUrl;
+              document.getElementById("scoreCard").style.display = "block";
+              alert("✅ 報到成功！");
+            } else {
+              alert("❗報到失敗：" + data.message);
+            }
+          })
+          .catch(err => alert("⚠️ 報到失敗：" + err));
+      };
     }
 
-    document.getElementById("registerForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("name").value;
-      const uid = document.getElementById("uid").value;
+    function parseToken(uuid) {
+      if (!uuid || uuid.length < 18) return null;
+      const gateId = uuid.slice(0, 14);
+      const token = uuid.slice(14);
+      return { gateId, token };
+    }
 
-      const url = "https://script.google.com/macros/s/AKfycbytiYXFh90M1jg393JgplvWUStVBlF9-xQkIhojSKbqzplyrG70knyQHL3F8pmv2Y2PvQ/exec";
-      const res = await fetch(`${url}?action=register&uid=${uid}&name=${encodeURIComponent(name)}`);
-      const data = await res.json();
+    function verifyToken(gateId, token) {
+      fetch(VERIFY_API + "?gate=" + gateId + "&token=" + token + "&uid=" + userId)
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === "success") {
+            document.getElementById("verifyStatus").innerHTML = "✅ 驗證通過，已完成打卡";
+          } else {
+            document.getElementById("verifyStatus").innerHTML = "❌ 驗證失敗：" + data.message;
+          }
+        })
+        .catch(err => {
+          document.getElementById("verifyStatus").innerHTML = "❗錯誤：" + err;
+        });
+    }
 
-      document.getElementById("result").textContent = data.message;
-    });
+    (async () => {
+      await initLIFF();
 
-    main();
+      const urlParams = new URLSearchParams(window.location.search);
+      const uuid = urlParams.get("uuid");
+      if (uuid) {
+        const parsed = parseToken(uuid);
+        if (parsed) {
+          document.getElementById("passArea").style.display = "block";
+          document.getElementById("gateId").textContent = parsed.gateId;
+          verifyToken(parsed.gateId, parsed.token);
+        }
+      }
+    })();
   </script>
 </body>
 </html>
