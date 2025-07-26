@@ -58,6 +58,8 @@
   <script>
     const LIFF_ID = "2007819135-rOPyVmM6";
     const API_BASE = "https://script.google.com/macros/s/AKfycbwwE-ymGRVtjcif7Nda_fk319wUsCquIk5uN7oXo5KVF3BRkdmiyMIfNSQLwZyahnv0vg/exec";
+    const REPORT_API = API_BASE + "?action=register";
+    const VERIFY_API = API_BASE + "?action=pass_token";
 
     let userId = "", displayName = "";
 
@@ -76,7 +78,7 @@
       document.getElementById("reportBtn").style.display = "inline-block";
 
       document.getElementById("reportBtn").onclick = () => {
-        fetch(`${API_BASE}?action=register&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
+        fetch(`${REPORT_API}&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
           .then(res => res.json())
           .then(data => {
             if (data.status === "success") {
@@ -89,15 +91,16 @@
       };
     }
 
-    function parseToken(uuid) {
-      if (!uuid || uuid.length < 18) return null;
+    function parseUUID(uuid) {
+      if (!uuid || uuid.length < 32) return null;
       const gateId = uuid.slice(0, 14);
-      const token = uuid.slice(14);
+      const tp = uuid.slice(14, 16); // 若未使用可忽略
+      const token = uuid.slice(16);
       return { gateId, token };
     }
 
     function verifyToken(gateId, token) {
-      fetch(`${API_BASE}?action=pass_token&gateId=${gateId}&token=${token}&uid=${userId}`)
+      fetch(`${VERIFY_API}&gateId=${gateId}&token=${token}&uid=${userId}`)
         .then(res => res.json())
         .then(data => {
           if (data.status === "success") {
@@ -117,7 +120,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const uuid = urlParams.get("uuid");
       if (uuid) {
-        const parsed = parseToken(uuid);
+        const parsed = parseUUID(uuid);
         if (parsed) {
           document.getElementById("passArea").style.display = "block";
           document.getElementById("gateId").textContent = parsed.gateId;
