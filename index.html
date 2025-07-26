@@ -1,3 +1,4 @@
+<!-- ✅ index.html - 整合 LINE 登入 + Token 驗證流程 -->
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -44,6 +45,9 @@
     <p>🔐 請先使用 LINE 登入驗證</p>
     <p id="welcome"></p>
     <button class="btn" id="reportBtn" style="display:none;">📌 完成報到</button>
+    <div class="card" id="scoreCard" style="display:none;">
+      <p><strong>📊 個人計分表：</strong><a id="scoreSheet" href="#" target="_blank">點此查看</a></p>
+    </div>
   </div>
 
   <div class="info" id="passArea" style="display:none;">
@@ -55,8 +59,6 @@
   <script>
     const LIFF_ID = "2007819135-rOPyVmM6";
     const API_BASE = "https://script.google.com/macros/s/AKfycbz8qcngY8Z16qksv4xA1pKLUdzc6jJUPqS6q1Pf4Nk48TEgFQXowaLzmRK1HzBaJ86HUA/exec";
-    const REPORT_API = API_BASE + "?action=register";
-    const PASS_API = API_BASE + "?action=pass_token";
 
     let userId = "", displayName = "";
 
@@ -66,46 +68,33 @@
         liff.login();
         return;
       }
+
       const profile = await liff.getProfile();
       userId = profile.userId;
       displayName = profile.displayName;
+
       document.getElementById("welcome").innerHTML = `👤 歡迎，${displayName}`;
       document.getElementById("reportBtn").style.display = "inline-block";
 
       document.getElementById("reportBtn").onclick = () => {
-        fetch(`${REPORT_API}&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
+        fetch(`${API_BASE}?action=register&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
           .then(res => res.json())
           .then(data => {
-            if (data.status === "success") {
-              alert("✅ 報到成功！");
-            } else {
-              alert("❗報到失敗：" + data.message);
-            }
+            alert((data.status === "success") ? "✅ 報到成功！" : "❗報到失敗：" + data.message);
           })
           .catch(err => alert("⚠️ 報到失敗：" + err));
       };
     }
 
-    function parseUUID(uuid) {
-      if (!uuid || uuid.length < 32) return null;
+    function verifyToken(uuid) {
       const gateId = uuid.slice(0, 14);
-      const tp = uuid.slice(14, 16); // TP 類型
-      const token = uuid.slice(16);  // 16碼
-      return { gateId, tp, token };
-    }
-
-    function verifyToken({ gateId, tp, token }) {
-      document.getElementById("passArea").style.display = "block";
       document.getElementById("gateId").textContent = gateId;
 
-      fetch(`${PASS_API}&gateId=${gateId}&token=${token}&uid=${userId}`)
+      fetch(`${API_BASE}?action=pass_token&uuid=${uuid}&uid=${userId}`)
         .then(res => res.json())
         .then(data => {
-          if (data.status === "success") {
-            document.getElementById("verifyStatus").innerHTML = "✅ 驗證通過，已完成打卡";
-          } else {
-            document.getElementById("verifyStatus").innerHTML = "❌ 驗證失敗：" + data.message;
-          }
+          document.getElementById("verifyStatus").innerHTML =
+            (data.status === "success") ? `✅ ${data.message}` : `❌ 驗證失敗：${data.message}`;
         })
         .catch(err => {
           document.getElementById("verifyStatus").innerHTML = "❗錯誤：" + err;
@@ -117,14 +106,11 @@
 
       const urlParams = new URLSearchParams(window.location.search);
       const uuid = urlParams.get("uuid");
-      if (uuid) {
-        const parsed = parseUUID(uuid);
-        if (parsed) {
-          verifyToken(parsed);
-        }
+      if (uuid && uuid.length >= 32) {
+        document.getElementById("passArea").style.display = "block";
+        verifyToken(uuid);
       }
     })();
   </script>
 </body>
 </html>
-
