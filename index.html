@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NFC瘋打卡｜入口頁</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
@@ -57,7 +57,7 @@
 
   <script>
     const LIFF_ID = "2007819135-rOPyVmM6";
-    const API_URL = "https://script.google.com/macros/s/AKfycbwwE-ymGRVtjcif7Nda_fk319wUsCquIk5uN7oXo5KVF3BRkdmiyMIfNSQLwZyahnv0vg/exec";
+    const API_BASE = "https://script.google.com/macros/s/AKfycbwwE-ymGRVtjcif7Nda_fk319wUsCquIk5uN7oXo5KVF3BRkdmiyMIfNSQLwZyahnv0vg/exec";
 
     let userId = "", displayName = "";
 
@@ -76,7 +76,7 @@
       document.getElementById("reportBtn").style.display = "inline-block";
 
       document.getElementById("reportBtn").onclick = () => {
-        fetch(API_URL + "?action=register&uid=" + encodeURIComponent(userId) + "&name=" + encodeURIComponent(displayName))
+        fetch(`${API_BASE}?action=register&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
           .then(res => res.json())
           .then(data => {
             if (data.status === "success") {
@@ -89,12 +89,15 @@
       };
     }
 
-    async function registerToken(gateId, token) {
-      await fetch(API_URL + "?action=token_register&gateId=" + gateId + "&token=" + token);
+    function parseToken(uuid) {
+      if (!uuid || uuid.length < 18) return null;
+      const gateId = uuid.slice(0, 14);
+      const token = uuid.slice(14);
+      return { gateId, token };
     }
 
     function verifyToken(gateId, token) {
-      fetch(API_URL + "?action=pass_token&gateId=" + gateId + "&token=" + token + "&uid=" + userId)
+      fetch(`${API_BASE}?action=pass_token&gateId=${gateId}&token=${token}&uid=${userId}`)
         .then(res => res.json())
         .then(data => {
           if (data.status === "success") {
@@ -108,13 +111,6 @@
         });
     }
 
-    function parseToken(uuid) {
-      if (!uuid || uuid.length < 18) return null;
-      const gateId = uuid.slice(0, 14);
-      const token = uuid.slice(14);
-      return { gateId, token };
-    }
-
     (async () => {
       await initLIFF();
 
@@ -125,7 +121,6 @@
         if (parsed) {
           document.getElementById("passArea").style.display = "block";
           document.getElementById("gateId").textContent = parsed.gateId;
-          await registerToken(parsed.gateId, parsed.token);
           verifyToken(parsed.gateId, parsed.token);
         }
       }
