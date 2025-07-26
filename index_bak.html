@@ -1,0 +1,116 @@
+<!-- ✅ index.html - 整合 LINE 登入 + Token 驗證流程 -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NFC瘋打卡4｜入口頁</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: "Microsoft JhengHei", sans-serif;
+      background-color: #fefefe;
+      padding: 2rem;
+      text-align: center;
+      color: #333;
+    }
+    header {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      color: #ff4d4d;
+    }
+    .info, .card {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border: 1px dashed #aaa;
+      border-radius: 10px;
+      background: #fff9f5;
+    }
+    .btn {
+      background-color: #ff4d4d;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <header>NFC瘋打卡｜報到與關卡驗證</header>
+
+  <div class="info" id="loginArea">
+    <p>🔐 請先使用 LINE 登入驗證</p>
+    <p id="welcome"></p>
+    <button class="btn" id="reportBtn" style="display:none;">📌 完成報到</button>
+    <div class="card" id="scoreCard" style="display:none;">
+      <p><strong>📊 個人計分表：</strong><a id="scoreSheet" href="#" target="_blank">點此查看</a></p>
+    </div>
+  </div>
+
+  <div class="info" id="passArea" style="display:none;">
+    <p>📍 感應關卡成功！</p>
+    <p><strong>關卡 ID：</strong><span id="gateId"></span></p>
+    <p><strong>驗證結果：</strong><span id="verifyStatus">驗證中...</span></p>
+  </div>
+
+  <script>
+    const LIFF_ID = "2007819135-rOPyVmM6";
+    const API_BASE = "https://script.google.com/macros/s/AKfycbyRjpkGmWhK8cmSd1_q7HFZn6T4g1WnS3R8v8dwXOKt9EK44yt8_utTqQGF9L8IxUcPUQ/exec";
+
+    let userId = "", displayName = "";
+
+    async function initLIFF() {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      userId = profile.userId;
+      displayName = profile.displayName;
+
+      document.getElementById("welcome").innerHTML = `👤 歡迎，${displayName}`;
+      document.getElementById("reportBtn").style.display = "inline-block";
+
+      document.getElementById("reportBtn").onclick = () => {
+        fetch(`${API_BASE}?action=register&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
+          .then(res => res.json())
+          .then(data => {
+            alert((data.status === "success") ? "✅ 報到成功！" : "❗報到失敗：" + data.message);
+          })
+          .catch(err => alert("⚠️ 報到失敗：" + err));
+      };
+    }
+
+    function verifyToken(uuid) {
+      const gateId = uuid.slice(0, 14);
+      document.getElementById("gateId").textContent = gateId;
+
+      fetch(`${API_BASE}?action=pass_token&uuid=${uuid}&uid=${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("verifyStatus").innerHTML =
+            (data.status === "success") ? `✅ ${data.message}` : `❌ 驗證失敗：${data.message}`;
+        })
+        .catch(err => {
+          document.getElementById("verifyStatus").innerHTML = "❗錯誤：" + err;
+        });
+    }
+
+    (async () => {
+      await initLIFF();
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const uuid = urlParams.get("uuid");
+      if (uuid && uuid.length >= 32) {
+        document.getElementById("passArea").style.display = "block";
+        verifyToken(uuid);
+      }
+    })();
+  </script>
+</body>
+</html>

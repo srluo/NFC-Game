@@ -1,66 +1,53 @@
-<!-- ✅ index.html - 整合 LINE 登入 + Token 驗證流程 -->
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NFC瘋打卡4｜入口頁</title>
+  <title>NFC瘋打卡｜入口頁</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
       font-family: "Microsoft JhengHei", sans-serif;
       background-color: #fefefe;
-      padding: 2rem;
+      padding: 1rem;
       text-align: center;
       color: #333;
     }
-    header {
-      font-size: 1.5rem;
-      margin-bottom: 1rem;
-      color: #ff4d4d;
-    }
-    .info, .card {
+    .badge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 1rem;
       margin-top: 1.5rem;
-      padding: 1rem;
-      border: 1px dashed #aaa;
-      border-radius: 10px;
-      background: #fff9f5;
     }
-    .btn {
-      background-color: #ff4d4d;
-      color: white;
-      padding: 0.8rem 1.5rem;
-      font-size: 1rem;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 1.2rem;
+    .badge-grid img {
+      width: 100%;
+      opacity: 0.3;
+    }
+    .badge-grid img.active {
+      opacity: 1;
+    }
+    #successBadge {
+      margin-top: 1rem;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <header>NFC瘋打卡｜報到與關卡驗證</header>
-
-  <div class="info" id="loginArea">
-    <p>🔐 請先使用 LINE 登入驗證</p>
-    <p id="welcome"></p>
-    <button class="btn" id="reportBtn" style="display:none;">📌 完成報到</button>
-    <div class="card" id="scoreCard" style="display:none;">
-      <p><strong>📊 個人計分表：</strong><a id="scoreSheet" href="#" target="_blank">點此查看</a></p>
-    </div>
+  <h2>🎮 NFC瘋打卡徽章牆</h2>
+  <div class="badge-grid" id="badgeGrid">
+    <img id="badge1" src="Badge-1.png" />
+    <img id="badge2" src="Badge-2.png" />
+    <img id="badge3" src="Badge-3.png" />
+    <img id="badge4" src="Badge-4.png" />
+    <img id="badge5" src="Badge-5.png" />
   </div>
-
-  <div class="info" id="passArea" style="display:none;">
-    <p>📍 感應關卡成功！</p>
-    <p><strong>關卡 ID：</strong><span id="gateId"></span></p>
-    <p><strong>驗證結果：</strong><span id="verifyStatus">驗證中...</span></p>
+  <div id="successBadge">
+    <h3>🎉 恭喜完成所有關卡！</h3>
   </div>
-
   <script>
     const LIFF_ID = "2007819135-rOPyVmM6";
     const API_BASE = "https://script.google.com/macros/s/AKfycbyRjpkGmWhK8cmSd1_q7HFZn6T4g1WnS3R8v8dwXOKt9EK44yt8_utTqQGF9L8IxUcPUQ/exec";
-
-    let userId = "", displayName = "";
 
     async function initLIFF() {
       await liff.init({ liffId: LIFF_ID });
@@ -68,49 +55,24 @@
         liff.login();
         return;
       }
-
       const profile = await liff.getProfile();
-      userId = profile.userId;
-      displayName = profile.displayName;
-
-      document.getElementById("welcome").innerHTML = `👤 歡迎，${displayName}`;
-      document.getElementById("reportBtn").style.display = "inline-block";
-
-      document.getElementById("reportBtn").onclick = () => {
-        fetch(`${API_BASE}?action=register&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
-          .then(res => res.json())
-          .then(data => {
-            alert((data.status === "success") ? "✅ 報到成功！" : "❗報到失敗：" + data.message);
-          })
-          .catch(err => alert("⚠️ 報到失敗：" + err));
-      };
+      const uid = profile.userId;
+      loadBadges(uid);
     }
 
-    function verifyToken(uuid) {
-      const gateId = uuid.slice(0, 14);
-      document.getElementById("gateId").textContent = gateId;
-
-      fetch(`${API_BASE}?action=pass_token&uuid=${uuid}&uid=${userId}`)
-        .then(res => res.json())
-        .then(data => {
-          document.getElementById("verifyStatus").innerHTML =
-            (data.status === "success") ? `✅ ${data.message}` : `❌ 驗證失敗：${data.message}`;
-        })
-        .catch(err => {
-          document.getElementById("verifyStatus").innerHTML = "❗錯誤：" + err;
-        });
+    async function loadBadges(uid) {
+      const res = await fetch(`${API_BASE}?action=get_status&uid=${encodeURIComponent(uid)}`);
+      const data = await res.json();
+      if (data.status !== "ok") return;
+      const keys = ["關卡1","關卡2","關卡3","關卡4","關卡5"];
+      keys.forEach((key, i) => {
+        const badge = document.getElementById("badge" + (i+1));
+        if (data[key]) badge.classList.add("active");
+      });
+      if (data.allDone) document.getElementById("successBadge").style.display = "block";
     }
 
-    (async () => {
-      await initLIFF();
-
-      const urlParams = new URLSearchParams(window.location.search);
-      const uuid = urlParams.get("uuid");
-      if (uuid && uuid.length >= 32) {
-        document.getElementById("passArea").style.display = "block";
-        verifyToken(uuid);
-      }
-    })();
+    initLIFF();
   </script>
 </body>
 </html>
