@@ -72,23 +72,18 @@
       const profile = await liff.getProfile();
       userId = profile.userId;
       displayName = profile.displayName;
+
       document.getElementById("welcome").innerHTML = `👤 歡迎，${displayName}`;
+      document.getElementById("reportBtn").style.display = "inline-block";
 
-      // 進行自動註冊檢查
-      const res = await fetch(`${API_BASE}?action=register&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`);
-      const data = await res.json();
-
-      if (data.status === "success") {
-        alert("✅ 歡迎新參賽隊伍，已成功註冊！");
-      } else if (data.status === "exist") {
-        console.log("已有註冊紀錄");
-      } else {
-        alert("❗註冊失敗：" + data.message);
-      }
-
-      document.getElementById("reportBtn").style.display = "none";
-      document.getElementById("scoreCard").style.display = "block";
-      document.getElementById("scoreSheet").href = "https://docs.google.com/spreadsheets/d/144IaZ27AX-xMaN5SWHGG_o2knq9kcOvK-kHeC1dpQqg/";
+      document.getElementById("reportBtn").onclick = () => {
+        fetch(`${API_BASE}?action=register&uid=${encodeURIComponent(userId)}&name=${encodeURIComponent(displayName)}`)
+          .then(res => res.json())
+          .then(data => {
+            alert((data.status === "success") ? "✅ 報到成功！" : "❗報到失敗：" + data.message);
+          })
+          .catch(err => alert("⚠️ 報到失敗：" + err));
+      };
     }
 
     function verifyToken(uuid) {
