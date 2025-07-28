@@ -92,14 +92,7 @@
     }
 
     function verifyToken(uuid) {
-      const gateId = uuid.slice(0, 14);
-      
-      // 👉 如果是 Gate_0（註冊用 NFC 卡），就跳過驗證顯示
-      if (gateId === "3949500194BAB0" || !gateId) {
-        console.log("🔰 感應 Gate_0（註冊用卡），略過驗證顯示");
-        return;
-      }
-    
+      const gateId = uuid.slice(0, 14);    
       document.getElementById("gateId").textContent = gateId;
       document.getElementById("passArea").style.display = "block";
     
@@ -120,6 +113,15 @@
       const urlParams = new URLSearchParams(window.location.search);
       const uuid = urlParams.get("uuid");
       if (uuid && uuid.length >= 32) {
+        const gateId = uuid.slice(0, 14);
+        
+        // 🛑 判斷是否為 Gate_0 註冊卡
+        if (gateId === "Gate_0") {
+          console.log("🔰 感應 Gate_0（註冊用卡），略過顯示打卡區");
+          return;
+        }
+    
+        // ✅ 正常關卡才顯示
         document.getElementById("passArea").style.display = "block";
         verifyToken(uuid);
       }
