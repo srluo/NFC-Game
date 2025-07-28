@@ -93,8 +93,16 @@
 
     function verifyToken(uuid) {
       const gateId = uuid.slice(0, 14);
+      
+      // 👉 如果是 Gate_0（註冊用 NFC 卡），就跳過驗證顯示
+      if (gateId === "Gate_0" || gateId === "undefined") {
+        console.log("🔰 感應 Gate_0（註冊用卡），略過驗證顯示");
+        return;
+      }
+    
       document.getElementById("gateId").textContent = gateId;
-
+      document.getElementById("passArea").style.display = "block";
+    
       fetch(`${API_BASE}?action=pass_token&uuid=${uuid}&uid=${userId}`)
         .then(res => res.json())
         .then(data => {
